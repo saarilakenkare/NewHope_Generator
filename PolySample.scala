@@ -47,8 +47,10 @@ class PolySample extends Module {
     do_initstep := true.B
     input := io.seed_in
     byte := io.byte_in
+    index := 0.U
     withClockAndReset(clock, reset) {
       printf("PolySample input: 0x%x\n", Cat(io.seed_in))
+      printf("PolySample byte: 0x%x\n", io.byte_in)
     }
   }
   when (do_algo) {
@@ -65,7 +67,7 @@ class PolySample extends Module {
       for (i <- 0 until 32) {
         ext_seed(i) := input >> ((31 - i) * 8)
       }
-      ext_seed(32) := io.byte_in
+      ext_seed(32) := byte
       do_initstep := false.B
       do_loop := true.B
       do_loop_init := true.B
@@ -85,6 +87,7 @@ class PolySample extends Module {
       when (do_loop_start_shake) {
         withClockAndReset(clock, reset) {
           // printf("aloop_while_ctr a: %d, bytes: 0x%x\n", a, Cat(bytes))
+          printf("PolySample starting Shake, input: 0x%x\n", Cat(ext_seed))
         }
         // val cur_bytes = Vec(Seq.fill(200)(0.U(8.W)))
         Shake256Module.io.start := true.B

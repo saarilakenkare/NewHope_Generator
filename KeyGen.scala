@@ -15,11 +15,9 @@ class KeyGen extends Module {
   val shake_256_true = RegInit(false.B)
   val gen_a_true = RegInit(false.B)
   val poly_sample_true = RegInit(false.B)
-  // val multiply_polys_true = RegInit(false.B)
-  // val ntt_true = RegInit(false.B)
   val poly_ntt_true = RegInit(false.B)
-  val poly_sample_true_2 = RegInit(false.B)
-  val poly_ntt_true_2 = RegInit(false.B)
+  // val poly_sample_true_2 = RegInit(false.B)
+  // val poly_ntt_true_2 = RegInit(false.B)
   val poly_multiply_points_true = RegInit(false.B)
   val poly_add_true = RegInit(false.B)
   val serialize_poly_true = RegInit(false.B)
@@ -27,6 +25,9 @@ class KeyGen extends Module {
   val public_seed = RegInit(0.U(256.W))
   val noise_seed = RegInit(0.U(256.W))
   val current_state = RegInit(0.U(512.W))
+  val ntt_poly_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_s_set = RegInit(false.B)
+  val poly_sample_count = RegInit(0.U(2.W))
  
   val poly_a = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
   val poly_s = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
@@ -52,7 +53,7 @@ class KeyGen extends Module {
   val PolySampleModule = PolySample()
   PolySampleModule.io.start := poly_sample_true
   PolySampleModule.io.seed_in := noise_seed
-  PolySampleModule.io.byte_in := 0.U
+  PolySampleModule.io.byte_in := poly_sample_count
   
   val MultiplyPolysPointsModule = MultiplyPolysPoints()
   MultiplyPolysPointsModule.io.start := poly_multiply_points_true
@@ -72,6 +73,10 @@ class KeyGen extends Module {
   SerializePublicKeyModule.io.start := serialize_poly_true
   SerializePublicKeyModule.io.poly_in := poly_b
   SerializePublicKeyModule.io.seed_in := public_seed
+  
+  val PolyNTTModule = PolyNTT()
+  PolyNTTModule.io.start := poly_ntt_true
+  PolyNTTModule.io.poly_in := ntt_poly_in
   
   val got_shake = RegInit(false.B)
   val shake_out = RegInit(0.U(512.W))
@@ -124,83 +129,79 @@ class KeyGen extends Module {
   when (poly_sample_true) {
     withClockAndReset(clock, reset) {
       printf("poly_sample_true: noise_seed = 0x%x\n", noise_seed)
+      printf("poly_sample_true: count = 0x%x\n", poly_sample_count)
       printf("shake_out: 0x%x\n", shake_out)
     }
     poly_sample_true := false.B
   }
   when (PolySampleModule.io.output_valid) {
-      // poly_a := GenAModule.io.state_out
       withClockAndReset(clock, reset) {
-        printf("Received poly sample message: 0x%x\n", Cat(PolySampleModule.io.state_out))
+        printf("Received poly sample message(%d): 0x%x\n", poly_sample_count, Cat(PolySampleModule.io.state_out))
       }
-      // io.done := true.B
+
       poly_ntt_true := true.B
-      // multiply_polys_true := true.B
-      poly_s := PolySampleModule.io.state_out
+      ntt_poly_in := PolySampleModule.io.state_out
+      when (poly_sample_count === 0.U) {
+        poly_s := PolySampleModule.io.state_out
+      }
+      .otherwise {
+        poly_e := PolySampleModule.io.state_out
+      }
+      poly_sample_count := poly_sample_count + 1.U
   }
 
-  val PolyNTTModule = PolyNTT()
-  PolyNTTModule.io.start := false.B
-  PolyNTTModule.io.poly_in := poly_s
   
   when (poly_ntt_true) {
-    withClockAndReset(clock, reset) {
-      // printf("poly_sample_true: noise_seed = 0x%x\n", noise_seed)
-      // printf("shake_out: 0x%x\n", shake_out)
-    }
-    PolyNTTModule.io.start := poly_ntt_true
-    PolyNTTModule.io.poly_in := poly_s
-    when (PolyNTTModule.io.output_valid) {
+      poly_ntt_true := false.B
+  }
+  when (PolyNTTModule.io.output_valid) {
       withClockAndReset(clock, reset) {
         printf("Received poly ntt message: 0x%x\n", Cat(PolyNTTModule.io.poly_out))
       }
-      // io.done := true.B
-      poly_ntt_true := false.B
-      poly_sample_true_2 := true.B
-      poly_s := PolyNTTModule.io.poly_out
-    }
+      when (!poly_s_set) {
+        poly_sample_true := true.B
+        poly_s := PolyNTTModule.io.poly_out
+        poly_s_set := true.B
+      }
+      .otherwise {
+        poly_multiply_points_true := true.B
+        poly_e := PolyNTTModule.io.poly_out
+      }
   }
   
-  when (poly_sample_true_2) {
+  /*when (poly_sample_true_2) {
     withClockAndReset(clock, reset) {
       printf("poly_sample_true_2: noise_seed = 0x%x\n", noise_seed)
       printf("shake_out: 0x%x\n", shake_out)
     }
-    val PolySampleModule = PolySample()
-    PolySampleModule.io.start := poly_sample_true_2
-    PolySampleModule.io.seed_in := noise_seed
-    PolySampleModule.io.byte_in := 1.U
+    // val PolySampleModule = PolySample()
+    // PolySampleModule.io.start := poly_sample_true_2
+    // PolySampleModule.io.seed_in := noise_seed
+    // PolySampleModule.io.byte_in := 1.U
     when (PolySampleModule.io.output_valid) {
-      // poly_a := GenAModule.io.state_out
       withClockAndReset(clock, reset) {
         printf("Received poly sample message: 0x%x\n", Cat(PolySampleModule.io.state_out))
       }
-      // io.done := true.B
       poly_sample_true_2 := false.B
-      poly_ntt_true_2 := true.B
-      // multiply_polys_true := true.B
+      // poly_ntt_true_2 := true.B
+      poly_ntt_true := true.B
       poly_e := PolySampleModule.io.state_out
+      ntt_poly_in := PolySampleModule.io.state_out
     }
-  }
+  }*/
 
-  when (poly_ntt_true_2) {
-    withClockAndReset(clock, reset) {
-      // printf("poly_sample_true: noise_seed = 0x%x\n", noise_seed)
-      // printf("shake_out: 0x%x\n", shake_out)
-    }
-    // val PolyNTTModule = PolyNTT()
+  /*when (poly_ntt_true_2) {
     PolyNTTModule.io.start := poly_ntt_true_2
     PolyNTTModule.io.poly_in := poly_e
     when (PolyNTTModule.io.output_valid) {
       withClockAndReset(clock, reset) {
         printf("Received poly ntt message: 0x%x\n", Cat(PolyNTTModule.io.poly_out))
       }
-      // io.done := true.B
       poly_ntt_true_2 := false.B
       poly_multiply_points_true := true.B
       poly_e := PolyNTTModule.io.poly_out
     }
-  }
+  }*/
   
   when (poly_multiply_points_true) {
     poly_multiply_points_true := false.B
@@ -209,7 +210,6 @@ class KeyGen extends Module {
       withClockAndReset(clock, reset) {
         printf("Received multiply polys points message: 0x%x\n", Cat(MultiplyPolysPointsModule.io.poly_out))
       }
-      //io.done := true.B
       poly_add_true := true.B
       poly_as := MultiplyPolysPointsModule.io.poly_out
   }
@@ -221,9 +221,7 @@ class KeyGen extends Module {
       withClockAndReset(clock, reset) {
         printf("Received add polys message: 0x%x\n", Cat(AddPolysModule.io.poly_out))
       }
-      // io.done := true.B
       serialize_poly_true := true.B
-      // poly_multiply_points_true := false.B
       poly_b := AddPolysModule.io.poly_out
   }
 
@@ -234,9 +232,7 @@ class KeyGen extends Module {
       withClockAndReset(clock, reset) {
         printf("Received serialize poly message: 0x%x\n", Cat(SerializePolyModule.io.key_out))
       }
-      // io.done := true.B
       serialize_public_key_true := true.B
-      // poly_multiply_points_true := false.B
       secret_key := SerializePolyModule.io.key_out
   }
 
@@ -248,55 +244,9 @@ class KeyGen extends Module {
         printf("Received serialize public key message: 0x%x\n", Cat(SerializePublicKeyModule.io.key_out))
       }
       io.done := true.B
-      // poly_multiply_points_true := false.B
       public_key := SerializePublicKeyModule.io.key_out
   }
 
-  //when (multiply_polys_true) {
-  //  withClockAndReset(clock, reset) {
-      // printf("poly_sample_true: noise_seed = 0x%x\n", noise_seed)
-      // printf("shake_out: 0x%x\n", shake_out)
-  //  }
-  //  val MultiplyPolysModule = MultiplyPolys()
-  //  MultiplyPolysModule.io.start := multiply_polys_true
-  //  MultiplyPolysModule.io.poly_in := poly_s
-  //  MultiplyPolysModule.io.factors_in := Constants.gammas_bitrev_montgomery
-  //  when (MultiplyPolysModule.io.output_valid) {
-      // poly_a := GenAModule.io.state_out
-  //    withClockAndReset(clock, reset) {
-  //      printf("Received multiply pols message: 0x%x\n", Cat(MultiplyPolysModule.io.poly_out))
-  //    }
-      //io.done := true.B
-  //    multiply_polys_true := false.B
-  //    ntt_true := true.B
-  //    poly_s := MultiplyPolysModule.io.poly_out
-  //  }
-  //}
-
-  //when (ntt_true) {
-  //  withClockAndReset(clock, reset) {
-      // printf("poly_sample_true: noise_seed = 0x%x\n", noise_seed)
-      // printf("shake_out: 0x%x\n", shake_out)
-  //  }
-  //  val NTTModule = NTT()
-  //  NTTModule.io.start := ntt_true
-  //  NTTModule.io.poly_in := poly_s
-  //  NTTModule.io.powers_in := Constants.gammas_bitrev_montgomery
-  //  when (NTTModule.io.output_valid) {
-      // poly_a := GenAModule.io.state_out
-  //    withClockAndReset(clock, reset) {
-  //      printf("Received ntt message: 0x%x\n", Cat(NTTModule.io.poly_out))
-  //    }
-  //    io.done := true.B
-  //    ntt_true := false.B
-  //  }
-  //}
-
-  .otherwise {
-      withClockAndReset(clock, reset) {
-        // printf("Current Key Gen State: 0x%x\n", current_state)
-      }
-  }
 
   io.public_key := 0.U
   io.secret_key := 0.U
