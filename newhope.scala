@@ -19,11 +19,15 @@ class NewHopeAccelImp(outer: NewHopeAccel)(implicit p: Parameters) extends LazyR
   val cmd = Queue(io.cmd)
   val funct = cmd.bits.inst.funct
   
+  val public_key = RegInit(0.U((8*928).W))
   // val shake_input = Wire(UInt(width = 32.W))
   // shake_input := 0.U
 
-  val key_gen_true = RegInit(false.B)
   val key_gen_started = RegInit(false.B)
+  // val key_gen_started = RegInit(false.B)
+  val key_gen_finished = RegInit(false.B)
+  val key_encaps_started = RegInit(false.B)
+  val key_encaps_finished = RegInit(false.B)
   val done = RegInit(false.B)
   when (funct === 0.U) {
     withClockAndReset(clock, reset) {
@@ -31,39 +35,78 @@ class NewHopeAccelImp(outer: NewHopeAccel)(implicit p: Parameters) extends LazyR
     }
     // cmd.ready := true.B
     // io.busy := true.B
-    key_gen_true := true.B
     key_gen_started := true.B
+    // key_gen_started := true.B
   }
   .otherwise {
     // cmd.ready := false.B
     // io.busy := false.B
-    key_gen_true := false.B
+    key_gen_started := false.B
   }
   
   val KeyGenModule = KeyGen()
-  KeyGenModule.io.start := key_gen_true
+  KeyGenModule.io.start := key_gen_started
+  
+  val KeyEncapsModule = KeyEncaps()
+  KeyEncapsModule.io.start := key_encaps_started
+  KeyEncapsModule.io.public_key := public_key
 
-  when (key_gen_true && KeyGenModule.io.done) {
+  when (KeyGenModule.io.done && !key_gen_finished) {
     withClockAndReset(clock, reset) {
       printf("Key Gen Module Done!\n")
     }
     withClockAndReset(clock, reset) {
+      printf("case 1\n")
       // printf("case 1: cmd.ready = false, io.busy = true\n")
     }
+    public_key := KeyGenModule.io.public_key
     done := true.B
-    key_gen_true := false.B
     key_gen_started := false.B
+    key_gen_finished := true.B
+    // key_encaps_started := true.B
+    // key_encaps_started := true.B
     cmd.ready := false.B
     io.busy := true.B
   }
-  .elsewhen (!done && key_gen_started) {
+  .elsewhen (!key_gen_finished && key_gen_started) {
     withClockAndReset(clock, reset) {
+      printf("case 2\n")
+      // printf("case 1: cmd.ready = false, io.busy = true\n")
+    }
+  //  withClockAndReset(clock, reset) {
       // printf("case 2: cmd.ready = false, io.busy = true\n")
+  //  }
+    cmd.ready := false.B
+    io.busy := true.B
+  }
+  .elsewhen (key_encaps_started && KeyEncapsModule.io.done) {
+    withClockAndReset(clock, reset) {
+      printf("case 4\n")
+      // printf("case 1: cmd.ready = false, io.busy = true\n")
+    }
+    withClockAndReset(clock, reset) {
+      printf("Key Encaps Module Done!\n")
+    }
+    key_encaps_started := false.B
+    key_encaps_finished := true.B
+    done := true.B
+    cmd.ready := false.B
+    io.busy := true.B
+
+  }
+  .elsewhen (!key_encaps_finished && key_encaps_started) {
+    withClockAndReset(clock, reset) {
+      printf("case 3\n")
+      // printf("case 1: cmd.ready = false, io.busy = true\n")
     }
     cmd.ready := false.B
     io.busy := true.B
   }
   .otherwise {
+    withClockAndReset(clock, reset) {
+      printf("case 5\n")
+      // printf("case 1: cmd.ready = false, io.busy = true\n")
+    }
     withClockAndReset(clock, reset) {
       // printf("case 3: cmd.ready = false, io.busy = false\n")
     }
