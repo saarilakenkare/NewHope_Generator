@@ -7,8 +7,8 @@ import chisel3.util._
 class KeyGen extends Module {
   val io = IO(new Bundle {
     val start = Input(Bool())
-    val public_key = Output(UInt(928.W))
-    val secret_key = Output(UInt(896.W))
+    val public_key = Output(UInt((8*928).W))
+    val secret_key = Output(UInt((8*896).W))
     val done = Output(Bool())
   })
 
@@ -37,8 +37,7 @@ class KeyGen extends Module {
   
   val secret_key = RegInit(Vec(Seq.fill(896)(0.U(8.W))))
   val public_key = RegInit(Vec(Seq.fill(928)(0.U(8.W))))
-  
-  io.done := false.B
+  val done = RegInit(false.B)
   
   val Shake256Module = Shake256()
   Shake256Module.io.start := shake_256_true
@@ -243,13 +242,14 @@ class KeyGen extends Module {
       withClockAndReset(clock, reset) {
         printf("Received serialize public key message: 0x%x\n", Cat(SerializePublicKeyModule.io.key_out))
       }
-      io.done := true.B
+      done := true.B
       public_key := SerializePublicKeyModule.io.key_out
   }
 
 
-  io.public_key := 0.U
-  io.secret_key := 0.U
+  io.public_key := Cat(public_key)
+  io.secret_key := Cat(secret_key)
+  io.done := done
 
 }
 
