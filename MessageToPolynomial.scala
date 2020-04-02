@@ -4,59 +4,48 @@ import chisel3._
 import chisel3.util._
 
 // implements ShiftRows
-class GenA extends Module {
+class MessageToPolynomial extends Module {
   val io = IO(new Bundle {
     val start = Input(Bool())
-    val state_in = Input(UInt(256.W))
-    val state_out = Output(Vec(512, UInt(16.W)))
+    val state_in = Input(UInt(512.W))
+    val poly_out = Output(Vec(512, UInt(16.W)))
     val output_valid = Output(Bool())
   })
 
+  val Q = 12289
+  
   val output_correct = RegInit(false.B)
   val output_index = RegInit(0.U(8.W))
   val output_reg = RegInit(0.U(1600.W))
 
-  val rate = 168
-
   val state = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
   val bytes = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
 
-  val block_size = RegInit(0.U(16.W))
-  val input_offset = RegInit(0.U(16.W))
-
-  val do_algo = RegInit(false.B)
-  val matrix = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
-  val round = RegInit(0.U(8.W))
-  val init = RegInit(false.B)
-  val R = RegInit(1.U(8.W))
-  val ctr = RegInit(0.U(8.W))
   val poly_index = RegInit(0.U(8.W))
   val poly_out = Reg(Vec(512, UInt(16.W)))
 
+  val do_algo = RegInit(false.B)
   val do_initstep = RegInit(false.B)
-  val do_aloop = RegInit(false.B)
-  val do_aloop_init = RegInit(false.B)
-  val do_aloop_for_s = RegInit(false.B)
-  val do_aloop_bytes_init = RegInit(false.B)
-  val do_aloop_while_ctr = RegInit(false.B)
-  val do_aloop_fill_poly = RegInit(false.B)
-  val do_aloop_finish = RegInit(false.B)
+  val do_loop = RegInit(false.B)
+  val do_loop_init = RegInit(false.B)
+  val do_loop_main = RegInit(false.B)
+  val do_loop_bytes_init = RegInit(false.B)
+  val do_loop_while_ctr = RegInit(false.B)
+  val do_loop_fill_poly = RegInit(false.B)
+  val do_loop_finish = RegInit(false.B)
 
-  val a = RegInit(0.U(4.W))
-  val input = RegInit(0.U(256.W))
+  val i = RegInit(0.U(8.W))
+  val j = RegInit(0.U(8.W))
+  val input = RegInit(0.U(512.W))
 
-  val ext_seed = RegInit(Vec(Seq.fill(33)(0.U(8.W))))
-  
-  val StatePermuteModule = StatePermute()
-  StatePermuteModule.io.start := false.B
-  StatePermuteModule.io.state_in := 0.U
-  
   when (io.start && !do_algo) {
     do_algo := true.B
     do_initstep := true.B
+    // do_loop := true.B
+    // do_loop_init := true.B
     input := io.state_in
     withClockAndReset(clock, reset) {
-      printf("GenA input: 0x%x\n", io.state_in)
+      printf("M2P input: 0x%x\n", io.state_in)
     }
   }
   when (do_algo) {
@@ -69,42 +58,47 @@ class GenA extends Module {
       //printf("do_aloop_for_s: %b\n", do_aloop_for_s)
       //printf("do_aloop_while_ctr: %b\n", do_aloop_while_ctr)
     }
+
     when (do_initstep) {
       for (i <- 0 until 32) {
-        ext_seed(i) := input >> ((31 - i) * 8)
+        for (j <- 0 until 8) {
+          val message_i = (input >> ((63 - i) * 8)) & "hFF".U
+          val v = -((message_i >> j) & 1.U)
+          val mask = Wire(UInt(32.W))
+          when (v != 0.U) {
+            mask := "hFFFFFFFF".U
+          }
+          .otherwise {
+            mask := 0.U
+          }
+          poly_out(8*i+j) := mask & (Q.U/2.U)
+          poly_out(8*i+j+256) := mask & (Q.U/2.U)
+          withClockAndReset(clock, reset) {
+            printf("message(i): 0x%x\n", message_i)
+            printf("mask: 0x%x\n", mask)
+            printf("MessageToPolynomial poly_out[%d] = 0x%x\n", (8*i+j).U, mask & (Q.U / 2.U))
+  
+            printf("MessageToPolynomial poly_out[%d] = 0x%x\n", (8*i+j+256).U, mask & (Q.U / 2.U))
+          }
+        }
       }
-      do_initstep := false.B
-      do_aloop := true.B
-      do_aloop_init := true.B
+      output_correct := true.B
     }
 
-    when (do_aloop) {
-      val s = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
-      val t = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+    /*when (do_loop) {
       
-      when (do_aloop_init) {
-        ext_seed(32) := a
-        ctr := 0.U
-        for (i <- 0 until 33) {
-          t(i) := ext_seed(i)
-        }
-        t(32) := a
-        t(33) := "h1F".U
-        t(rate - 1) := t(rate - 1) | 128.U
-        do_aloop_init := false.B
-        do_aloop_for_s := true.B
+      when (do_loop_init) {
+        j := 0.U
+        do_loop_init := false.B
+        do_loop_main := true.B
         withClockAndReset(clock, reset) {
           //printf("s: 0x%x\n", Cat(s))
           //printf("t: 0x%x\n", Cat(t))
         }
       }
 
-      when (do_aloop_for_s) {
-        for (i <- 0 until rate/8) {
-          s(i) := Cat(t(8*i+7), t(8*i+6), t(8*i+5), t(8*i+4), t(8*i+3), t(8*i+2), t(8*i+1), t(8*i)) 
-        }
-        do_aloop_for_s := false.B
-        do_aloop_bytes_init := true.B
+      when (do_loop_main) {
+        val input_i = input >> (512 - i
       }
 
       when (do_aloop_bytes_init) {
@@ -154,7 +148,7 @@ class GenA extends Module {
         //}
         val value = Wire(UInt(16.W))
         value := bytes(poly_index) | (bytes(poly_index + 1.U) << 8)
-        when (value < 61445.U && ((a * 64.U + ctr) < 512.U)) {
+        when (value < 61445.U) {
           poly_out(a * 64.U + ctr) := value
           ctr := ctr + 1.U
           withClockAndReset(clock, reset) {
@@ -162,7 +156,7 @@ class GenA extends Module {
           }
         }
         poly_index := poly_index + 2.U
-        when ((poly_index === (rate.U - 1.U)) || (ctr === 64.U)) {
+        when ((poly_index === (rate.U - 1.U)) || (ctr === 63.U)) {
           do_aloop_fill_poly := false.B
           do_aloop_finish := true.B
           // output_correct := true.B
@@ -189,20 +183,20 @@ class GenA extends Module {
         }
         do_aloop_finish := false.B
       }
-    }
+    }*/
   }
 
   when (!output_correct) {
-    io.state_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {
     withClockAndReset(clock, reset) {
-      printf("Gen A Done: 0x%x\n", Cat(poly_out))
+      printf("MessageToPolynomial Done: 0x%x\n", Cat(poly_out))
     }
     output_correct := false.B
     do_algo := false.B
-    io.state_out := poly_out
+    io.poly_out := poly_out
     // io.state_out := Vec(Seq.fill(512)(0.U(16.W)))
     io.output_valid := true.B
   }
@@ -215,6 +209,6 @@ class GenA extends Module {
   // }
 }
 
-object GenA {
-  def apply(): GenA = Module(new GenA())
+object MessageToPolynomial {
+  def apply(): MessageToPolynomial = Module(new MessageToPolynomial())
 }

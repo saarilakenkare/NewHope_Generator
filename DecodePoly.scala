@@ -4,11 +4,10 @@ import chisel3._
 import chisel3.util._
 
 // implements ShiftRows
-class AddPolys extends Module {
+class DecodePoly extends Module {
   val io = IO(new Bundle {
     val start = Input(Bool())
-    val poly_a_in = Input(Vec(512, UInt(16.W)))
-    val poly_b_in = Input(Vec(512, UInt(16.W)))
+    val public_key = Input(UInt((8*928).W))
     val poly_out = Output(Vec(512, UInt(16.W)))
     val output_valid = Output(Bool())
   })
@@ -18,11 +17,12 @@ class AddPolys extends Module {
   val QINV = 12287
   val Q = 12289
 
-  val poly_a_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_b_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val public_key = RegInit(Vec(Seq.fill(928)(0.U(8.W))))
+  val poly_out = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
   
   val do_algo = RegInit(false.B)
-  val poly_out = Reg(Vec(512, UInt(16.W)))
+  val key_index = RegInit(0.U(8.W))
+  val key_out = Reg(Vec(896, UInt(8.W)))
 
   val do_initstep = RegInit(false.B)
   val do_aloop = RegInit(false.B)
@@ -32,11 +32,12 @@ class AddPolys extends Module {
   when (io.start && !do_algo) {
     do_algo := true.B
     do_initstep := true.B
-    poly_a_in := io.poly_a_in
-    poly_b_in := io.poly_b_in
+    // public_key := io.public_key
+    for (i <- 0 until 928) {
+      public_key(i) := (io.public_key >> (8 * (927 - i))) & "hFF".U
+    }
     withClockAndReset(clock, reset) {
-      printf("AddPolys poly a input: 0x%x\n", Cat(io.poly_a_in))
-      printf("AddPolys poly b input: 0x%x\n", Cat(io.poly_b_in))
+      printf("DecodePoly public key input: 0x%x\n", Cat(io.public_key))
     }
   }
 
@@ -50,15 +51,23 @@ class AddPolys extends Module {
       //printf("do_aloop_while_ctr: %b\n", do_aloop_while_ctr)
     }
 
-    for (i <- 0 until 512) {
-      val a = poly_a_in(i)
-      val b = poly_b_in(i)
+    withClockAndReset(clock, reset) {
+      printf("DecodePoly vec public key: 0x%x\n", Cat(public_key))
+    }
+    for (i <- 0 until 512/4) {
+      val t0  = (public_key(7*i+1) & "h3f".U) << 8
+      val t1a = (public_key(7*i+2)) << 2
+      val t1b = (public_key(7*i+3) & "h0f".U) << 10
+      val t2a = (public_key(7*i+4)) << 4
+      val t2b = (public_key(7*i+5) & "h03".U) << 12
+      val t3  = (public_key(7*i+6)) << 6
+      
 
-      withClockAndReset(clock, reset) {
-        //printf("a: 0x%x, b: 0x%x\n", a, b)
-      }
+      poly_out(4*i) := public_key(7*i) | t0
+      poly_out(4*i+1) := (public_key(7*i+1) >> 6) | t1a | t1b
+      poly_out(4*i+2) := (public_key(7*i+3) >> 4) | t2a | t2b
+      poly_out(4*i+3) := (public_key(7*i+5) >> 2) | t3
 
-      poly_out(i) := (a + b) % Q.U
     }
     output_correct := true.B
   }
@@ -69,7 +78,7 @@ class AddPolys extends Module {
   }
   .otherwise {
     withClockAndReset(clock, reset) {
-      printf("Add Polys Done: 0x%x\n", Cat(poly_out))
+      printf("Decode Poly Done: 0x%x\n", Cat(poly_out))
     }
     output_correct := false.B
     do_algo := false.B
@@ -78,6 +87,6 @@ class AddPolys extends Module {
   }
 }
 
-object AddPolys {
-  def apply(): AddPolys = Module(new AddPolys())
+object DecodePoly {
+  def apply(): DecodePoly = Module(new DecodePoly())
 }

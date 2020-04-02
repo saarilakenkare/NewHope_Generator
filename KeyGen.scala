@@ -168,39 +168,39 @@ class KeyGen extends Module {
       }
   }
   
-  /*when (poly_sample_true_2) {
-    withClockAndReset(clock, reset) {
-      printf("poly_sample_true_2: noise_seed = 0x%x\n", noise_seed)
-      printf("shake_out: 0x%x\n", shake_out)
-    }
+  //when (poly_sample_true_2) {
+  //  withClockAndReset(clock, reset) {
+  //    printf("poly_sample_true_2: noise_seed = 0x%x\n", noise_seed)
+  //    printf("shake_out: 0x%x\n", shake_out)
+  //  }
     // val PolySampleModule = PolySample()
     // PolySampleModule.io.start := poly_sample_true_2
     // PolySampleModule.io.seed_in := noise_seed
     // PolySampleModule.io.byte_in := 1.U
-    when (PolySampleModule.io.output_valid) {
-      withClockAndReset(clock, reset) {
-        printf("Received poly sample message: 0x%x\n", Cat(PolySampleModule.io.state_out))
-      }
-      poly_sample_true_2 := false.B
+  //  when (PolySampleModule.io.output_valid) {
+  //    withClockAndReset(clock, reset) {
+  //      printf("Received poly sample message: 0x%x\n", Cat(PolySampleModule.io.state_out))
+  //    }
+  //    poly_sample_true_2 := false.B
       // poly_ntt_true_2 := true.B
-      poly_ntt_true := true.B
-      poly_e := PolySampleModule.io.state_out
-      ntt_poly_in := PolySampleModule.io.state_out
-    }
-  }*/
+  //    poly_ntt_true := true.B
+  //    poly_e := PolySampleModule.io.state_out
+  //    ntt_poly_in := PolySampleModule.io.state_out
+  //  }
+  //}
 
-  /*when (poly_ntt_true_2) {
-    PolyNTTModule.io.start := poly_ntt_true_2
-    PolyNTTModule.io.poly_in := poly_e
-    when (PolyNTTModule.io.output_valid) {
-      withClockAndReset(clock, reset) {
-        printf("Received poly ntt message: 0x%x\n", Cat(PolyNTTModule.io.poly_out))
-      }
-      poly_ntt_true_2 := false.B
-      poly_multiply_points_true := true.B
-      poly_e := PolyNTTModule.io.poly_out
-    }
-  }*/
+  //when (poly_ntt_true_2) {
+  //  PolyNTTModule.io.start := poly_ntt_true_2
+  //  PolyNTTModule.io.poly_in := poly_e
+  //  when (PolyNTTModule.io.output_valid) {
+  //    withClockAndReset(clock, reset) {
+  //      printf("Received poly ntt message: 0x%x\n", Cat(PolyNTTModule.io.poly_out))
+  //    }
+  //    poly_ntt_true_2 := false.B
+  //    poly_multiply_points_true := true.B
+  //    poly_e := PolyNTTModule.io.poly_out
+  //  }
+  //}
   
   when (poly_multiply_points_true) {
     poly_multiply_points_true := false.B
