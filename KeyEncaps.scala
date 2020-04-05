@@ -8,6 +8,8 @@ class KeyEncaps extends Module {
   val io = IO(new Bundle {
     val start = Input(Bool())
     val public_key = Input(UInt((8*928).W))
+    val cipher = Output(UInt((1088*8).W))
+    val ss = Output(UInt((32*8).W))
     val done = Output(Bool())
   })
 
@@ -36,6 +38,7 @@ class KeyEncaps extends Module {
   val poly_s_set = RegInit(false.B)
   val add_one_set = RegInit(false.B)
   val poly_sample_count = RegInit(0.U(2.W))
+  val cipher = RegInit(0.U((1088*8).W))
   
   val poly_a = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
   val poly_b = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
@@ -112,9 +115,12 @@ class KeyEncaps extends Module {
   Shake256ModuleSS.io.length_in := 32.U
   Shake256ModuleSS.io.length_out := 32.U
 
+  io.ss := 0.U
   
   val do_algo = RegInit(false.B)
   val done = RegInit(false.B)
+  val encode_done = RegInit(false.B)
+  val ss_done = RegInit(false.B)
   val done_1 = RegInit(false.B)
   val done_2 = RegInit(false.B)
 
@@ -347,8 +353,9 @@ class KeyEncaps extends Module {
         printf("\n")
       }
       // serialize_poly_true := true.B
-      done_2 := true.B
-      // done := true.B
+      // done_2 := true.B
+      encode_done := true.B
+      cipher := Cat(EncodeCipherModule.io.cipher_out)
   }
   
   when (shake_256_ss_true) {
@@ -358,11 +365,16 @@ class KeyEncaps extends Module {
     withClockAndReset(clock, reset) {
       printf("Received shake256(ss) message: 0x%x\n", Shake256ModuleSS.io.state_out)
     }
-    done_1 := true.B
+    // done_1 := true.B
+    ss_done := true.B
+    io.ss := Cat(Shake256ModuleSS.io.state_out)
   }
+
+  io.cipher := cipher
   // io.done := done
-  io.done := done_1 && done_2
+  // io.done := done_1 && done_2
   // io.done := true.B
+  io.done := encode_done && ss_done
 }
 
 object KeyEncaps {

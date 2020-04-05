@@ -91,6 +91,8 @@ class EncodeCipher extends Module {
     withClockAndReset(clock, reset) {
       printf("EncodeCipher Done: 0x%x\n", cipher_out(0))
     }
+    done1 := false.B
+    done2 := false.B
     output_correct := false.B
     do_algo := false.B
     io.cipher_out := cipher_out
