@@ -18,14 +18,14 @@ class GenA extends Module {
 
   val rate = 168
 
-  val state = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
-  val bytes = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+  val state = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
+  val bytes = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
 
   val block_size = RegInit(0.U(16.W))
   val input_offset = RegInit(0.U(16.W))
 
   val do_algo = RegInit(false.B)
-  val matrix = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
+  val matrix = RegInit(VecInit(Seq.fill(25)(0.U(64.W))))
   val round = RegInit(0.U(8.W))
   val init = RegInit(false.B)
   val R = RegInit(1.U(8.W))
@@ -45,7 +45,7 @@ class GenA extends Module {
   val a = RegInit(0.U(4.W))
   val input = RegInit(0.U(256.W))
 
-  val ext_seed = RegInit(Vec(Seq.fill(33)(0.U(8.W))))
+  val ext_seed = RegInit(VecInit(Seq.fill(33)(0.U(8.W))))
   
   val StatePermuteModule = StatePermute()
   StatePermuteModule.io.start := false.B
@@ -79,8 +79,8 @@ class GenA extends Module {
     }
 
     when (do_aloop) {
-      val s = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
-      val t = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+      val s = RegInit(VecInit(Seq.fill(25)(0.U(64.W))))
+      val t = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
       
       when (do_aloop_init) {
         ext_seed(32) := a
@@ -193,7 +193,7 @@ class GenA extends Module {
   }
 
   when (!output_correct) {
-    io.state_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.state_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

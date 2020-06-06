@@ -17,7 +17,7 @@ class CompressPoly extends Module {
   val QINV = 12287
   val Q = 12289
 
-  val poly_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   
   val do_algo = RegInit(false.B)
   val cipher_index = RegInit(0.U(8.W))
@@ -43,7 +43,7 @@ class CompressPoly extends Module {
     val k = Wire(UInt(32.W))
     k := 0.U
     for (i <- 0 until 512 by 8) {
-      val array = Vec(Seq.fill(8)(0.U(32.W)))
+      val array = VecInit(Seq.fill(8)(0.U(32.W)))
       withClockAndReset(clock, reset) {
         printf("i1: %d\n", ((i/8)*3).U)
       }
@@ -86,7 +86,7 @@ class CompressPoly extends Module {
   }
 
   when (!output_correct) {
-    io.cipher_out := Vec(Seq.fill(192)(0.U(8.W)))
+    io.cipher_out := VecInit(Seq.fill(192)(0.U(8.W)))
     io.output_valid := false.B
   }
   .otherwise {

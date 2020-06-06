@@ -18,8 +18,8 @@ class MessageToPolynomial extends Module {
   val output_index = RegInit(0.U(8.W))
   val output_reg = RegInit(0.U(1600.W))
 
-  val state = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
-  val bytes = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+  val state = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
+  val bytes = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
 
   val poly_index = RegInit(0.U(8.W))
   val poly_out = Reg(Vec(512, UInt(16.W)))
@@ -187,7 +187,7 @@ class MessageToPolynomial extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

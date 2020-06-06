@@ -21,7 +21,7 @@ class Shake256 extends Module {
   val d = "h1F".U
   val rate = 136.U
 
-  val state = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+  val state = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
   val input = RegInit(0.U)
   val length_in = RegInit(0.U(8.W))
   val length_out = RegInit(0.U(8.W))
@@ -30,7 +30,7 @@ class Shake256 extends Module {
   val input_offset = RegInit(0.U(16.W))
 
   val do_algo = RegInit(false.B)
-  val matrix = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
+  val matrix = RegInit(VecInit(Seq.fill(25)(0.U(64.W))))
   val round = RegInit(0.U(8.W))
   val init = RegInit(false.B)
   val R = RegInit(1.U(8.W))
@@ -115,7 +115,7 @@ class Shake256 extends Module {
     block_size := 0.U
     input_offset := 0.U
     init := false.B
-    state := Vec(Seq.fill(200)(0.U(8.W)))
+    state := VecInit(Seq.fill(200)(0.U(8.W)))
     withClockAndReset(clock, reset) {
       printf("Shake256 input: 0x%x\n", io.state_in) 
     }

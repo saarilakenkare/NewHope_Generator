@@ -33,7 +33,7 @@ class PolySample extends Module {
   val do_loop_init = RegInit(false.B)
   val do_loop_start_shake = RegInit(false.B)
 
-  val ext_seed = RegInit(Vec(Seq.fill(34)(0.U(8.W))))
+  val ext_seed = RegInit(VecInit(Seq.fill(34)(0.U(8.W))))
 
 
   val Shake256Module = Shake256()
@@ -151,7 +151,7 @@ class PolySample extends Module {
   }
 
   when (!output_correct) {
-    io.state_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.state_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

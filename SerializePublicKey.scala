@@ -15,7 +15,7 @@ class SerializePublicKey extends Module {
 
   val output_correct = RegInit(false.B)
   
-  val poly_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   // val seed_in = RegInit(Vec(Seq.fill(32)(0.U(8.W))))
  
 
@@ -70,7 +70,7 @@ class SerializePublicKey extends Module {
   //}
 
   when (!output_correct) {
-    io.key_out := Vec(Seq.fill(928)(0.U(8.W)))
+    io.key_out := VecInit(Seq.fill(928)(0.U(8.W)))
     io.output_valid := false.B
   }
   .otherwise {

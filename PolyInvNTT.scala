@@ -13,8 +13,8 @@ class PolyInvNTT extends Module {
     val output_valid = Output(Bool())
   })
 
-  val poly_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_out = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly_out = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
 
   val do_algo = RegInit(false.B)
   val reverse_poly = RegInit(false.B)
@@ -159,7 +159,7 @@ class PolyInvNTT extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

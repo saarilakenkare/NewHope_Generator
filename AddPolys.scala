@@ -18,8 +18,8 @@ class AddPolys extends Module {
   val QINV = 12287
   val Q = 12289
 
-  val poly_a_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_b_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_a_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly_b_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   
   val do_algo = RegInit(false.B)
   val poly_out = Reg(Vec(512, UInt(16.W)))
@@ -64,7 +64,7 @@ class AddPolys extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

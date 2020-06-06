@@ -17,7 +17,7 @@ class DecompressPoly extends Module {
   val QINV = 12287
   val Q = 12289
 
-  val poly_out = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_out = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   
   val do_algo = RegInit(false.B)
   val cipher_index = RegInit(0.U(8.W))
@@ -72,7 +72,7 @@ class DecompressPoly extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

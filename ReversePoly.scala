@@ -37,8 +37,8 @@ class ReversePoly extends Module {
   val QINV = 12287
   val Q = 12289
 
-  val poly_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val factors_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val factors_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   
   val do_algo = RegInit(false.B)
   val poly_index = RegInit(0.U(8.W))
@@ -80,7 +80,7 @@ class ReversePoly extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {

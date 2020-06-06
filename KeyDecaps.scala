@@ -26,10 +26,10 @@ class KeyDecaps extends Module {
   val secret = RegInit(0.U((8*896).W))
   val message = RegInit(0.U(512.W))
   
-  val poly_u = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_v = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_s = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly_tmp = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_u = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly_v = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly_s = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly_tmp = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   
   val DecodePolyModule1 = DecodePoly()
   DecodePolyModule1.io.start := decode_pk_true_1

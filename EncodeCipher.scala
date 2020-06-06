@@ -13,9 +13,9 @@ class EncodeCipher extends Module {
     val output_valid = Output(Bool())
   })
 
-  val poly1_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val poly2_in = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
-  val cipher_out = RegInit(Vec(Seq.fill(1088)(0.U(8.W))))
+  val poly1_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val poly2_in = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
+  val cipher_out = RegInit(VecInit(Seq.fill(1088)(0.U(8.W))))
 
   val do_algo = RegInit(false.B)
   val serialize_poly = RegInit(false.B)
@@ -84,7 +84,7 @@ class EncodeCipher extends Module {
 
   output_correct := done1 && done2
   when (!output_correct) {
-    io.cipher_out := Vec(Seq.fill(1088)(0.U(8.W)))
+    io.cipher_out := VecInit(Seq.fill(1088)(0.U(8.W)))
     io.output_valid := false.B
   }
   .otherwise {

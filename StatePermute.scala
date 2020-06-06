@@ -16,10 +16,10 @@ class StatePermute extends Module {
   val output_index = RegInit(0.U(8.W))
   val output_reg = RegInit(0.U(1600.W))
 
-  val state = RegInit(Vec(Seq.fill(200)(0.U(8.W))))
+  val state = RegInit(VecInit(Seq.fill(200)(0.U(8.W))))
 
   val do_algo = RegInit(false.B)
-  val matrix = RegInit(Vec(Seq.fill(25)(0.U(64.W))))
+  val matrix = RegInit(VecInit(Seq.fill(25)(0.U(64.W))))
   val round = RegInit(0.U(8.W))
   val init = RegInit(false.B)
   val R = RegInit(1.U(8.W))
@@ -85,15 +85,15 @@ class StatePermute extends Module {
         printf("do_rstep: %b\n", do_rstep)
       }
       when (do_dstep) {
-        val c = Vec(Seq.fill(5)(0.U(64.W)))
+        val c = VecInit(Seq.fill(5)(0.U(64.W)))
         for (idx <- 0 until 5) {
           c(idx) := matrix(idx*5) ^ matrix(idx*5+1) ^ matrix(idx*5+2) ^ matrix(idx*5+3) ^ matrix(idx*5+4)
         }
-        val rol = Vec(Seq.fill(5)(0.U(64.W)))
+        val rol = VecInit(Seq.fill(5)(0.U(64.W)))
         for (idx <- 0 until 5) {
           rol(idx) := ((c(idx) << 1) ^ (c(idx) >> 63))
         }
-        val d = Vec(Seq.fill(5)(0.U(64.W)))
+        val d = VecInit(Seq.fill(5)(0.U(64.W)))
         for (idx <- 0 until 5) {
           d(idx) := c((idx + 4) % 5) ^ rol((idx + 1) % 5)
         }
@@ -135,7 +135,7 @@ class StatePermute extends Module {
 
       when (do_xstep) {
         for (j <- 0 until 5) {
-          val x = Vec(Seq.fill(5)(0.U(64.W)))
+          val x = VecInit(Seq.fill(5)(0.U(64.W)))
           for (i <- 0 until 5) {
             x(i) := matrix(5 * i + j)
           }

@@ -13,7 +13,7 @@ class PolyNTT extends Module {
     val output_valid = Output(Bool())
   })
 
-  val poly_s = RegInit(Vec(Seq.fill(512)(0.U(16.W))))
+  val poly_s = RegInit(VecInit(Seq.fill(512)(0.U(16.W))))
   val gammas_bitrev_montgomery = VecInit(Array(
   4075.U,5315.U,7965.U,7373.U,522.U,10120.U,9027.U,5079.U,2344.U,1278.U,1973.U,5574.U,1018.U,6364.U,11248.U,8775.U,
   7500.U,7822.U,5537.U,4749.U,8500.U,12142.U,5456.U,7840.U,5445.U,3860.U,4536.U,11239.U,6171.U,8471.U,2683.U,11099.U,
@@ -107,7 +107,7 @@ class PolyNTT extends Module {
   }
 
   when (!output_correct) {
-    io.poly_out := Vec(Seq.fill(512)(0.U(16.W)))
+    io.poly_out := VecInit(Seq.fill(512)(0.U(16.W)))
     io.output_valid := false.B
   }
   .otherwise {
